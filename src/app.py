@@ -3,6 +3,15 @@ import pandas as pd
 import plotly.express as px
 from database_manager import DatabaseManager
 import time
+import joblib
+import os
+
+model_path = ("data/model.pkl")
+model= None
+if os.path.exists(model_path):
+    model = joblib.load(model_path)
+else:
+    print ("Ai model dosen't exist")
 
 st.set_page_config(page_title="AI Ops Dashboard", layout="wide")
 
@@ -27,6 +36,18 @@ while True:
 
     if not df.empty:
         with placeholder.container():
+            if model:
+                current_row = df[['temperature', 'vibration', 'preasure']].iloc[[0]]
+                risk_score = model.predict_proba(current_row)[0][1]
+
+                st.subheader("AI Prediction")
+                if risk_score > 0.8:
+                    st.error(f"CRITICAL ALERT: Iminent defection risk: {risk_score*100:0f}%")
+                if risk_score > 0.4:
+                    st.warning(f"ATENTION: Defection risk: {risk_score*100:0f}")
+                if risk_score < 0.4:
+                    st.success(f"Sistem is stable. Defection risk: {risk_score*100:0f}%")
+
             last_entry = df.iloc[0]
 
             col1, col2, col3, col4 = st.columns(4)
@@ -48,5 +69,5 @@ while True:
 
             st.subheader("Recent Logs")
             st.dataframe(df.head(10), use_container_width=True)
-    
+
     time.sleep(update_interval)
